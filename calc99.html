@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARTILLERY OS // TACTICAL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg: #050a05;
+            --accent: #00ff41;
+            --dim: #004411;
+            --glass: rgba(0, 20, 5, 0.8);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--accent);
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            padding: 20px;
+        }
+
+        .hud-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1400px;
+            margin: auto;
+        }
+
+        .panel {
+            background: var(--glass);
+            border: 1px solid var(--dim);
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--dim);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        label {
+            width: 110px;
+            font-size: 0.85rem;
+        }
+
+        input,
+        select {
+            flex: 1;
+            background: #000;
+            border: 1px solid var(--dim);
+            color: var(--accent);
+            padding: 8px;
+            font-family: inherit;
+        }
+
+        .center-display {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .big-value {
+            font-size: 4rem;
+            margin: 10px 0;
+            text-shadow: 0 0 15px var(--accent);
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            border-top: 1px solid var(--dim);
+            padding-top: 15px;
+        }
+
+        .stat-box {
+            font-size: 1.2rem;
+        }
+
+        .stat-box small {
+            font-size: 0.7rem;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="hud-grid">
+        <div class="panel">
+            <div class="panel-title">INPUT_VECTORS</div>
+            <div class="input-group"><label>X міном.</label><input type="number" id="mx" value="9999" oninput="calc()">
+            </div>
+            <div class="input-group"><label>Y міном.</label><input type="number" id="my" value="10645" oninput="calc()">
+            </div>
+            <div class="input-group"><label>Z міном.</label><input type="number" id="mz" value="40" oninput="calc()">
+            </div>
+            <div style="margin: 15px 0; border-top: 1px solid #111;"></div>
+            <div class="input-group"><label>X цілі</label><input type="number" id="tx" value="7030" oninput="calc()">
+            </div>
+            <div class="input-group"><label>Y цілі</label><input type="number" id="ty" value="7389" oninput="calc()">
+            </div>
+            <div class="input-group"><label>Z цілі</label><input type="number" id="tz" value="22" oninput="calc()">
+            </div>
+            <div class="input-group"><label>Заряд</label><select id="charge" onchange="calc()">
+                    <option value="4">CHG-4</option>
+                </select></div>
+        </div>
+
+        <div class="panel center-display">
+            <div class="panel-title">BALLISTIC_SOLUTION</div>
+            <div class="big-value" id="val-elev">0000</div>
+            <div class="grid-stats">
+                <div class="stat-box"><small>MILS</small>
+                    <div id="val-az-mil">00-00</div>
+                </div>
+                <div class="stat-box"><small>DEG</small>
+                    <div id="val-az-deg">000.0°</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">TELEMETRY_DATA</div>
+            <div class="input-group"><label>Dist:</label>
+                <div id="tel-dist">0.0 m</div>
+            </div>
+            <div class="input-group"><label>Delta Z:</label>
+                <div id="tel-dz">0 m</div>
+            </div>
+            <div class="input-group"><label>Corr.Dist:</label>
+                <div id="tel-rdist">0.0 m</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fullTable = { 4: [{ r: 4300, e: 1082 }, { r: 4400, e: 1060 }] };
+        function calc() {
+            const mx = parseFloat(document.getElementById('mx').value), my = parseFloat(document.getElementById('my').value), mz = parseFloat(document.getElementById('mz').value);
+            const tx = parseFloat(document.getElementById('tx').value), ty = parseFloat(document.getElementById('ty').value), tz = parseFloat(document.getElementById('tz').value);
+
+            const dX = tx - mx, dY = ty - my;
+            const dist = Math.sqrt(dX * dX + dY * dY);
+            const dz = tz - mz;
+
+            let angleRad = Math.atan2(dX, dY);
+            if (angleRad < 0) angleRad += 2 * Math.PI;
+            let angleDeg = angleRad * (180 / Math.PI);
+            let azMil = Math.round((angleDeg / 360) * 6400);
+            const milStr = azMil.toString().padStart(4, '0');
+
+            document.getElementById('tel-dist').innerText = dist.toFixed(1) + " m";
+            document.getElementById('tel-dz').innerText = dz + " m";
+            document.getElementById('val-az-deg').innerText = angleDeg.toFixed(1) + "°";
+            document.getElementById('val-az-mil').innerText = milStr.slice(0, -2) + "-" + milStr.slice(-2);
+
+            const table = fullTable[4];
+            let elev = table[0].e + (dist - table[0].r) * (table[1].e - table[0].e) / (table[1].r - table[0].r);
+
+            document.getElementById('val-elev').innerText = Math.round(elev);
+            document.getElementById('tel-rdist').innerText = dist.toFixed(2) + " m";
+        }
+        window.onload = calc;
+    </script>
+</body>
+
+</html>
